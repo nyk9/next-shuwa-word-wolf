@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPusherInstance } from "@/lib/pusher/server";
 
 // 投票状態を管理
-const votes = new Map<string, {
-  roomId: string;
-  votes: Map<string, string>; // 投票者 -> 投票対象
-  createdAt: number;
-}>();
+const votes = new Map<
+  string,
+  {
+    roomId: string;
+    votes: Map<string, string>; // 投票者 -> 投票対象
+    createdAt: number;
+  }
+>();
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +19,7 @@ export async function POST(req: NextRequest) {
     if (!roomId || !voter || !target) {
       return NextResponse.json(
         { error: "roomId, voter, and target are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -51,7 +54,7 @@ export async function POST(req: NextRequest) {
     console.error("Error in vote POST:", error);
     return NextResponse.json(
       { error: "Failed to record vote", details: String(error) },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -64,7 +67,7 @@ export async function GET(req: NextRequest) {
     if (!roomId) {
       return NextResponse.json(
         { error: "roomId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -72,7 +75,7 @@ export async function GET(req: NextRequest) {
     if (!roomVotes) {
       return NextResponse.json(
         { error: "No votes found for this room" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -91,7 +94,7 @@ export async function GET(req: NextRequest) {
     console.error("Error in vote GET:", error);
     return NextResponse.json(
       { error: "Failed to get votes", details: String(error) },
-      { status: 500 }
+      { status: 500 },
     );
   }
-} 
+}
