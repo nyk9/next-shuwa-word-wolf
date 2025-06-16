@@ -10,7 +10,7 @@ export default async function SerectPage() {
   return (
     <div className="">
       <ShowUsername allUsers={users} />
-      <ThemeList words={words} />
+      <ThemeList words={words} users={users} />
     </div>
   );
 }
