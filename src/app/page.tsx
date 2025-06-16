@@ -1,9 +1,9 @@
-import { ModeToggle } from "@/components/ui/mode-toggle";
+import { ProfileForm } from "@/features/register/components/user-form";
 
 export default function Home() {
   return (
     <div>
-      <ModeToggle />
+      <ProfileForm />
     </div>
   );
 }
