@@ -41,8 +41,8 @@ export default function ThemeList(props: { words: Word[]; users: string[] }) {
     };
   }, []);
 
-  const handleThemeSelect = async (wordId: number) => {
-    if (isHost) {
+  const handleThemeSelect = async (wordId: number, isUsed: boolean) => {
+    if (isHost && !isUsed) {
       try {
         console.log("Current users:", users);
         console.log("Selected wordId:", wordId);
@@ -51,6 +51,15 @@ export default function ThemeList(props: { words: Word[]; users: string[] }) {
           console.error("No users available");
           return;
         }
+
+        // お題を使用済みとしてマーク
+        await fetch("/api/game/used-themes", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ themeId: wordId }),
+        });
 
         // お題の選択を通知
         await fetch("/api/game/select-theme", {
@@ -87,59 +96,87 @@ export default function ThemeList(props: { words: Word[]; users: string[] }) {
 
         const responseData = await response.json();
         console.log("Assign words response:", responseData);
+
+        router.push(`/room?roomId=${wordId}`);
       } catch (error) {
         console.error("Failed to start game:", error);
       }
     }
-    router.push(`/room?roomId=${wordId}`);
   };
 
   return (
     <div className="w-full">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-        {words.map((word, index) => (
-          <Card
-            key={word.id}
-            className="group hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer"
-          >
-            <button
-              className="w-full p-10 text-center rounded-xl border-3 border-transparent group-hover:border-blue-400 group-hover:bg-gradient-to-br group-hover:from-blue-50 group-hover:to-purple-50 dark:group-hover:from-blue-950 dark:group-hover:to-purple-950 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50"
-              onClick={() => {
-                toggleCard(index);
-                handleThemeSelect(word.id);
-              }}
-              disabled={!isHost}
+        {words.map((word, index) => {
+          const isUsed = word.isUsed || false;
+          const isDisabled = !isHost || isUsed;
+
+          return (
+            <Card
+              key={word.id}
+              className={`group transition-all duration-300 ${
+                isUsed
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:shadow-xl hover:scale-105 cursor-pointer"
+              }`}
             >
-              <div className="flex flex-col items-center justify-center min-h-[160px]">
-                {!isOpened[index] ? (
-                  <>
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-6 text-white text-3xl font-bold shadow-xl group-hover:shadow-2xl transition-shadow duration-300">
-                      {index + 1}
-                    </div>
-                    <span className="text-xl font-semibold text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors">
-                      テーマ {index + 1}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                      {isHost ? "クリックして表示" : "選択不可"}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mb-6 text-white text-2xl shadow-xl animate-pulse">
-                      🎯
-                    </div>
-                    <p className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-3">
-                      お題：{word.type}
-                    </p>
-                    <p className="text-base text-green-600 dark:text-green-400 font-medium">
-                      クリックして開始
-                    </p>
-                  </>
-                )}
-              </div>
-            </button>
-          </Card>
-        ))}
+              <button
+                className={`w-full p-10 text-center rounded-xl border-3 transition-all duration-300 focus:outline-none ${
+                  isUsed
+                    ? "border-gray-300 bg-gray-100 dark:bg-gray-800 dark:border-gray-600"
+                    : "border-transparent group-hover:border-blue-400 group-hover:bg-gradient-to-br group-hover:from-blue-50 group-hover:to-purple-50 dark:group-hover:from-blue-950 dark:group-hover:to-purple-950 focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50"
+                }`}
+                onClick={() => {
+                  if (!isDisabled) {
+                    toggleCard(index);
+                    handleThemeSelect(word.id, isUsed);
+                  }
+                }}
+                disabled={isDisabled}
+              >
+                <div className="flex flex-col items-center justify-center min-h-[160px]">
+                  {isUsed ? (
+                    <>
+                      <div className="w-20 h-20 bg-gray-400 dark:bg-gray-600 rounded-full flex items-center justify-center mb-6 text-white text-2xl shadow-xl">
+                        ✓
+                      </div>
+                      <span className="text-xl font-semibold text-gray-500 dark:text-gray-400">
+                        使用済み
+                      </span>
+                      <span className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+                        {word.type}
+                      </span>
+                    </>
+                  ) : !isOpened[index] ? (
+                    <>
+                      <div className="w-20 h-20 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-6 text-white text-3xl font-bold shadow-xl group-hover:shadow-2xl transition-shadow duration-300">
+                        {index + 1}
+                      </div>
+                      <span className="text-xl font-semibold text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors">
+                        テーマ {index + 1}
+                      </span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        {isHost ? "クリックして表示" : "選択不可"}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mb-6 text-white text-2xl shadow-xl animate-pulse">
+                        🎯
+                      </div>
+                      <p className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-3">
+                        お題：{word.type}
+                      </p>
+                      <p className="text-base text-green-600 dark:text-green-400 font-medium">
+                        クリックして開始
+                      </p>
+                    </>
+                  )}
+                </div>
+              </button>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

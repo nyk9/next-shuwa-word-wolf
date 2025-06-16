@@ -29,6 +29,7 @@ export function ResultDisplay({ roomId, username }: ResultDisplayProps) {
   const [gameData, setGameData] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -98,6 +99,31 @@ export function ResultDisplay({ roomId, username }: ResultDisplayProps) {
     } catch (error) {
       console.error("Failed to start result phase:", error);
       setError("結果フェーズの開始に失敗しました");
+    }
+  };
+
+  const handleResetUsedThemes = async () => {
+    try {
+      setIsResetting(true);
+      setError(null);
+
+      const response = await fetch("/api/game/used-themes", {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "お題のリセットに失敗しました");
+      }
+
+      console.log("Used themes reset successfully");
+    } catch (error) {
+      console.error("Failed to reset used themes:", error);
+      setError(
+        error instanceof Error ? error.message : "お題のリセットに失敗しました",
+      );
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -211,9 +237,19 @@ export function ResultDisplay({ roomId, username }: ResultDisplayProps) {
         </div>
       </div>
 
-      <Button>
-        <Link href={"/serect"}>次のお題へ</Link>
-      </Button>
+      <div className="flex flex-col gap-3">
+        <Button>
+          <Link href={"/serect"}>次のお題へ</Link>
+        </Button>
+        <Button
+          variant="outline"
+          onClick={handleResetUsedThemes}
+          disabled={isResetting}
+          className="text-sm"
+        >
+          {isResetting ? "リセット中..." : "🔄 使用済みお題をリセット"}
+        </Button>
+      </div>
     </Card>
   );
 }
