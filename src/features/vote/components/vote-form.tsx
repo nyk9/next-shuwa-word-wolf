@@ -22,6 +22,7 @@ export function VoteForm({ roomId, username, users }: VoteFormProps) {
   const [voteState, setVoteState] = useState<VoteState | null>(null);
   const [hasVoted, setHasVoted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isStartingResult, setIsStartingResult] = useState(false);
 
   // 投票状態を取得
   const fetchVotes = async () => {
@@ -87,20 +88,50 @@ export function VoteForm({ roomId, username, users }: VoteFormProps) {
     }
   };
 
+  const handleStartResultPhase = async () => {
+    try {
+      setIsStartingResult(true);
+      setError(null);
+
+      const response = await fetch("/api/game/timer", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          roomId,
+          action: "start-result-phase",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "結果フェーズの開始に失敗しました");
+      }
+    } catch (error) {
+      console.error("Failed to start result phase:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "結果フェーズの開始に失敗しました",
+      );
+    } finally {
+      setIsStartingResult(false);
+    }
+  };
+
   return (
     <Card className="p-6 max-w-md mx-auto">
       <h2 className="text-xl font-bold mb-4">投票</h2>
-      
-      {error && (
-        <div className="text-red-500 mb-4">{error}</div>
-      )}
+
+      {error && <div className="text-red-500 mb-4">{error}</div>}
 
       {!hasVoted ? (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
             {users
-              .filter(user => user !== username) // 自分以外のユーザーを表示
-              .map(user => (
+              .filter((user) => user !== username) // 自分以外のユーザーを表示
+              .map((user) => (
                 <Button
                   key={user}
                   variant={selectedUser === user ? "default" : "outline"}
@@ -121,9 +152,7 @@ export function VoteForm({ roomId, username, users }: VoteFormProps) {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="text-center text-green-600">
-            投票が完了しました
-          </div>
+          <div className="text-center text-green-600">投票が完了しました</div>
           {voteState && (
             <div className="space-y-2">
               <div className="text-sm text-gray-500">
@@ -137,10 +166,20 @@ export function VoteForm({ roomId, username, users }: VoteFormProps) {
                   </div>
                 ))}
               </div>
+              <div className="mt-4">
+                <Button
+                  onClick={handleStartResultPhase}
+                  disabled={isStartingResult}
+                  className="w-full"
+                  variant="outline"
+                >
+                  {isStartingResult ? "結果を準備中..." : "結果を表示"}
+                </Button>
+              </div>
             </div>
           )}
         </div>
       )}
     </Card>
   );
-} 
+}

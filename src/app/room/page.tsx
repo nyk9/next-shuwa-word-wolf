@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { pusherClient } from "@/lib/pusher/client";
 import { Card } from "@/components/ui/card";
 import { VoteForm } from "@/features/vote/components/vote-form";
+import { ResultDisplay } from "@/features/result/components/result-display";
 
 interface GameState {
   type: string;
@@ -17,6 +18,7 @@ interface GameState {
 type TimerState = {
   remaining: number;
   isVotingPhase: boolean;
+  isResultPhase?: boolean;
 };
 
 export default function RoomPage() {
@@ -55,7 +57,7 @@ export default function RoomPage() {
 
         const data = await response.json();
         setGameState(data);
-        console.log("data: ", data);
+        console.log("fetchAssignedWord data: ", data);
       } catch (error) {
         console.error("Failed to fetch assigned word:", error);
         setError(
@@ -96,6 +98,7 @@ export default function RoomPage() {
         if (response.ok) {
           const data = await response.json();
           setTimerState(data);
+          console.log("updateTimer data: ", data);
         }
       } catch (error) {
         console.error("Failed to update timer:", error);
@@ -124,6 +127,13 @@ export default function RoomPage() {
     });
 
     channel.bind("voting-phase-started", (data: any) => {
+      if (data.roomId === searchParams.get("roomId")) {
+        updateTimer();
+      }
+    });
+
+    channel.bind("result-phase-started", (data: any) => {
+      console.log("result-phase-started event received:", data);
       if (data.roomId === searchParams.get("roomId")) {
         updateTimer();
       }
@@ -159,7 +169,9 @@ export default function RoomPage() {
         <>
           <Card className="p-4">
             <div className="text-center">
-              {timerState?.isVotingPhase ? (
+              {timerState?.isResultPhase ? (
+                <div className="text-xl font-bold text-green-600">結果発表</div>
+              ) : timerState?.isVotingPhase ? (
                 <div className="text-xl font-bold text-red-600">
                   投票フェーズ
                 </div>
@@ -168,23 +180,29 @@ export default function RoomPage() {
                   残り時間: {formatTime(timerState?.remaining || 0)}
                 </div>
               )}
+              <div className="text-xs text-gray-500 mt-2">
+                Debug: isVoting={String(timerState?.isVotingPhase)}, isResult=
+                {String(timerState?.isResultPhase)}
+              </div>
             </div>
           </Card>
 
-          {timerState?.isVotingPhase && (
+          {timerState?.isResultPhase ? (
+            <ResultDisplay roomId={gameState.roomId} username={username} />
+          ) : timerState?.isVotingPhase ? (
             <VoteForm
               roomId={gameState.roomId}
               username={username}
               users={gameState.users}
             />
+          ) : (
+            <Card className="p-4">
+              <div className="text-center">
+                <div className="text-lg font-bold mb-2">あなたの単語</div>
+                <div className="text-xl">{gameState.word}</div>
+              </div>
+            </Card>
           )}
-
-          <Card className="p-4">
-            <div className="text-center">
-              <div className="text-lg font-bold mb-2">あなたの単語</div>
-              <div className="text-xl">{gameState.word}</div>
-            </div>
-          </Card>
         </>
       )}
     </div>
