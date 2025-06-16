@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { pusherClient } from "@/lib/pusher/client";
@@ -25,7 +25,7 @@ export function VoteForm({ roomId, username, users }: VoteFormProps) {
   const [isStartingResult, setIsStartingResult] = useState(false);
 
   // 投票状態を取得
-  const fetchVotes = async () => {
+  const fetchVotes = useCallback(async () => {
     try {
       const response = await fetch(`/api/game/vote?roomId=${roomId}`);
       if (response.ok) {
@@ -37,7 +37,7 @@ export function VoteForm({ roomId, username, users }: VoteFormProps) {
     } catch (error) {
       console.error("Failed to fetch votes:", error);
     }
-  };
+  }, [roomId, username]);
 
   useEffect(() => {
     // 初回実行
@@ -45,7 +45,7 @@ export function VoteForm({ roomId, username, users }: VoteFormProps) {
 
     // Pusherのイベントをリッスン
     const channel = pusherClient.subscribe("game-channel");
-    channel.bind("vote-received", (data: any) => {
+    channel.bind("vote-received", (data: { roomId: string }) => {
       if (data.roomId === roomId) {
         fetchVotes();
       }
@@ -54,7 +54,7 @@ export function VoteForm({ roomId, username, users }: VoteFormProps) {
     return () => {
       channel.unbind();
     };
-  }, [roomId, username]);
+  }, [roomId, username, fetchVotes]);
 
   const handleVote = async () => {
     if (!selectedUser) {

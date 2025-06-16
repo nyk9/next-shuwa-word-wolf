@@ -2,9 +2,6 @@ import { WORDLIST } from "@/constants/words";
 import { shuffleArray } from "@/lib/shuffleArray";
 import { NextResponse } from "next/server";
 
-// 使用済みお題のIDを管理するSet（used-themes APIと同期）
-const usedThemes = new Set<number>();
-
 export async function GET() {
   try {
     // 使用済みお題の情報を取得

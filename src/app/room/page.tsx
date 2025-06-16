@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { pusherClient } from "@/lib/pusher/client";
 import { Card } from "@/components/ui/card";
@@ -21,7 +21,7 @@ type TimerState = {
   isResultPhase?: boolean;
 };
 
-export default function RoomPage() {
+function RoomPageContent() {
   const searchParams = useSearchParams();
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [timerState, setTimerState] = useState<TimerState | null>(null);
@@ -120,19 +120,19 @@ export default function RoomPage() {
 
     // Pusherのイベントをリッスン
     const channel = pusherClient.subscribe("game-channel");
-    channel.bind("words-assigned", (data: any) => {
+    channel.bind("words-assigned", (data: { roomId: string }) => {
       if (data.roomId === searchParams.get("roomId") && username) {
         fetchAssignedWord(username);
       }
     });
 
-    channel.bind("voting-phase-started", (data: any) => {
+    channel.bind("voting-phase-started", (data: { roomId: string }) => {
       if (data.roomId === searchParams.get("roomId")) {
         updateTimer();
       }
     });
 
-    channel.bind("result-phase-started", (data: any) => {
+    channel.bind("result-phase-started", (data: { roomId: string }) => {
       console.log("result-phase-started event received:", data);
       if (data.roomId === searchParams.get("roomId")) {
         updateTimer();
@@ -206,5 +206,21 @@ export default function RoomPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function RoomPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-4">
+          <Card className="p-4">
+            <div className="text-center">読み込み中...</div>
+          </Card>
+        </div>
+      }
+    >
+      <RoomPageContent />
+    </Suspense>
   );
 }

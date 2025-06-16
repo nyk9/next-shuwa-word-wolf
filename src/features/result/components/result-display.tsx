@@ -69,7 +69,7 @@ export function ResultDisplay({ roomId, username }: ResultDisplayProps) {
 
     // Pusherのイベントをリッスン
     const channel = pusherClient.subscribe("game-channel");
-    channel.bind("vote-received", (data: any) => {
+    channel.bind("vote-received", (data: { roomId: string }) => {
       if (data.roomId === roomId) {
         fetchResults();
       }
@@ -167,8 +167,8 @@ export function ResultDisplay({ roomId, username }: ResultDisplayProps) {
   // 最多得票者を計算
   const maxVotes = Math.max(...Object.values(voteData.voteCounts));
   const mostVotedUsers = Object.entries(voteData.voteCounts)
-    .filter(([_, count]) => count === maxVotes)
-    .map(([user, _]) => user);
+    .filter(([, count]) => count === maxVotes)
+    .map(([user]) => user);
 
   return (
     <Card className="p-6 max-w-md mx-auto space-y-6">
